@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a237e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>WMS — Kompletacja</title>
+  <style>
+    :root {
+      --primary: #1565c0; --primary-dark: #0d47a1; --success: #2e7d32;
+      --danger: #c62828; --warn: #f57f17; --bg: #f5f5f5; --card: #ffffff;
+      --text: #212121; --muted: #757575;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+    /* HEADER */
+    header { background: var(--primary); color: #fff; padding: 14px 16px;
+             display: flex; align-items: center; justify-content: space-between;
+             position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    header h1 { font-size: 18px; font-weight: 700; }
+    #operator-badge { font-size: 13px; background: rgba(255,255,255,0.2);
+                      padding: 4px 10px; border-radius: 20px; }
+
+    /* SCREENS */
+    .screen { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .screen.active { display: block; }
+
+    /* CARDS */
+    .card { background: var(--card); border-radius: 12px; padding: 16px;
+            margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .card-title { font-size: 13px; color: var(--muted); text-transform: uppercase;
+                  letter-spacing: 0.5px; margin-bottom: 8px; }
+
+    /* BUTTONS */
+    .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px;
+           font-size: 16px; font-weight: 600; cursor: pointer; text-align: center;
+           margin-bottom: 10px; transition: opacity 0.15s; }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger  { background: var(--danger);  color: #fff; }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+
+    /* ORDER LIST */
+    .order-item { padding: 14px 0; border-bottom: 1px solid #eee; cursor: pointer;
+                  display: flex; justify-content: space-between; align-items: center; }
+    .order-item:last-child { border-bottom: none; }
+    .order-item:active { background: #f0f4ff; }
+    .order-num { font-weight: 700; font-size: 16px; }
+    .order-meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px;
+             font-weight: 600; background: #e3f2fd; color: var(--primary); }
+
+    /* PICK ITEM */
+    .pick-item { padding: 16px; border-radius: 12px; background: var(--card);
+                 margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .pick-step { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .pick-location { font-size: 22px; font-weight: 800; color: var(--primary);
+                     letter-spacing: 1px; margin-bottom: 6px; }
+    .pick-product { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+    .pick-qty { font-size: 15px; color: var(--muted); }
+    .pick-progress { height: 6px; background: #e0e0e0; border-radius: 3px;
+                     margin: 12px 0; overflow: hidden; }
+    .pick-progress-bar { height: 100%; background: var(--primary); border-radius: 3px;
+                         transition: width 0.3s; }
+
+    /* ALERTS */
+    .alert { padding: 14px 16px; border-radius: 10px; margin-bottom: 12px;
+             font-weight: 600; font-size: 15px; display: none; }
+    .alert-success { background: #e8f5e9; color: var(--success); border: 2px solid #a5d6a7; }
+    .alert-danger  { background: #ffebee; color: var(--danger);  border: 2px solid #ef9a9a; }
+    .alert.visible { display: block; animation: fadeIn 0.3s; }
+
+    /* SCAN INPUT */
+    .scan-box { position: relative; }
+    .scan-input { width: 100%; padding: 16px 50px 16px 16px; font-size: 18px;
+                  border: 2px solid #bdbdbd; border-radius: 10px; outline: none; }
+    .scan-input:focus { border-color: var(--primary); }
+    .scan-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+                 font-size: 24px; }
+
+    /* STATS BAR */
+    .stats-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .stat-box { flex: 1; background: var(--card); border-radius: 10px; padding: 12px;
+                text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-val { font-size: 24px; font-weight: 800; color: var(--primary); }
+    .stat-lbl { font-size: 11px; color: var(--muted); }
+
+    /* LOGIN */
+    #login-screen { display: flex; flex-direction: column; justify-content: center;
+                    min-height: 100vh; max-width: 400px; margin: 0 auto; padding: 32px 16px; }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo h2 { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .login-logo p { color: var(--muted); margin-top: 4px; }
+    .input-field { width: 100%; padding: 14px 16px; font-size: 16px;
+                   border: 2px solid #e0e0e0; border-radius: 10px; margin-bottom: 12px;
+                   outline: none; }
+    .input-field:focus { border-color: var(--primary); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="screen active">
+  <div class="login-logo">
+    <div style="font-size:48px">📦</div>
+    <h2>WMS Kompletacja</h2>
+    <p>SubiektGT AI Integration</p>
+  </div>
+  <input class="input-field" type="text" id="login-input" placeholder="Login (np. magazyn1)">
+  <button class="btn btn-primary" onclick="doLogin()">Zaloguj się</button>
+</div>
+
+<!-- HEADER (ukryty przed loginem) -->
+<header id="app-header" style="display:none">
+  <h1>📦 WMS</h1>
+  <div id="operator-badge">—</div>
+</header>
+
+<!-- LISTA ZAMÓWIEŃ -->
+<div id="orders-screen" class="screen">
+  <div class="card">
+    <div class="card-title">Zamówienia do kompletacji</div>
+    <div id="orders-list">
+      <p style="color:var(--muted);text-align:center;padding:20px">Ładowanie...</p>
+    </div>
+  </div>
+  <button class="btn btn-outline" onclick="loadOrders()">🔄 Odśwież</button>
+</div>
+
+<!-- KOMPLETACJA -->
+<div id="picking-screen" class="screen">
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-done">0</div>
+      <div class="stat-lbl">Zebrane</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-total">0</div>
+      <div class="stat-lbl">Wszystkich</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-dist">—</div>
+      <div class="stat-lbl">Trasa (m)</div>
+    </div>
+  </div>
+
+  <div class="pick-progress">
+    <div class="pick-progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div id="current-pick" class="pick-item">
+    <div class="pick-step" id="pick-step-label"></div>
+    <div class="pick-location" id="pick-location">—</div>
+    <div class="pick-product" id="pick-product">—</div>
+    <div class="pick-qty" id="pick-qty">—</div>
+  </div>
+
+  <div class="alert alert-success" id="alert-ok"></div>
+  <div class="alert alert-danger"  id="alert-err"></div>
+
+  <div class="scan-box card" style="margin-bottom:12px">
+    <div class="card-title">Zeskanuj lub wpisz kod towaru</div>
+    <div style="position:relative;margin-top:8px">
+      <input class="scan-input" type="text" id="scan-input"
+             placeholder="Skanuj EAN / wpisz symbol..."
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter') confirmScan()">
+      <span class="scan-icon">📷</span>
+    </div>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="confirmScan()">✅ Potwierdź</button>
+  </div>
+
+  <button class="btn btn-outline" onclick="skipItem()" style="margin-bottom:8px">⏭ Pomiń pozycję</button>
+  <button class="btn btn-danger" id="complete-btn" style="display:none" onclick="completeOrder()">
+    🏁 Zakończ kompletację
+  </button>
+  <button class="btn btn-outline" onclick="showScreen('orders-screen')">← Wróć do listy</button>
+</div>
+
+<!-- PODSUMOWANIE -->
+<div id="summary-screen" class="screen">
+  <div class="card" style="text-align:center;padding:32px">
+    <div style="font-size:64px;margin-bottom:16px">✅</div>
+    <h2 style="margin-bottom:8px;color:var(--success)">Kompletacja zakończona!</h2>
+    <p id="summary-text" style="color:var(--muted);margin-bottom:24px"></p>
+    <div id="summary-errors" style="display:none" class="alert alert-danger visible">
+      ⚠️ Wystąpiły błędy skanu — sprawdź z kierownikiem.
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="showScreen('orders-screen'); loadOrders()">
+    📋 Nowe zamówienie
+  </button>
+</div>
+
+<script>
+  const API = '';  // Ten sam serwer — puste = relatywne URL
+  let state = {
+    operator: null,
+    sesjaId: null,
+    zamowienieId: null,
+    zamowienieNumer: null,
+    picklist: [],
+    currentIdx: 0,
+    done: 0,
+    errors: 0,
+    startTime: null
+  };
+
+  // ── Logowanie ─────────────────────────────────────────────────────────
+  function doLogin() {
+    const login = document.getElementById('login-input').value.trim();
+    if (!login) { alert('Wpisz login!'); return; }
+    state.operator = login;
+    document.getElementById('operator-badge').textContent = '👤 ' + login;
+    document.getElementById('app-header').style.display = 'flex';
+    document.getElementById('login-screen').classList.remove('active');
+    showScreen('orders-screen');
+    loadOrders();
+  }
+
+  // ── Ekrany ────────────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ── Lista zamówień ────────────────────────────────────────────────────
+  async function loadOrders() {
+    const list = document.getElementById('orders-list');
+    list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Ładowanie...</p>';
+    try {
+      const res = await fetch(`${API}/api/wms/orders/pending`);
+      const orders = await res.json();
+      if (!orders.length) {
+        list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Brak zamówień do kompletacji 🎉</p>';
+        return;
+      }
+      list.innerHTML = orders.map(o => `
+        <div class="order-item" onclick="startPicking(${o.id}, '${o.numer}')">
+          <div>
+            <div class="order-num">${o.numer}</div>
+            <div class="order-meta">${o.kontrahent}</div>
+            <div class="order-meta">Termin: ${o.termin ? o.termin.slice(0,10) : '—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="badge">${o.liczba_pozycji} poz.</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">${formatMoney(o.wartosc_netto)}</div>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      list.innerHTML = `<p style="color:var(--danger);padding:16px">❌ Błąd: ${e.message}</p>`;
+    }
+  }
+
+  // ── Start kompletacji ─────────────────────────────────────────────────
+  async function startPicking(orderId, orderNumer) {
+    try {
+      // Start sesji
+      const sesRes = await fetch(`${API}/api/wms/session/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zamowienie_id: orderId, operator_login: state.operator })
+      });
+      const sesData = await sesRes.json();
+      state.sesjaId = sesData.sesja_id;
+      state.zamowienieId = orderId;
+      state.zamowienieNumer = orderNumer;
+
+      // Pobierz listę kompletacyjną
+      const pickRes = await fetch(`${API}/api/wms/order/${orderId}/picklist`);
+      const pickData = await pickRes.json();
+
+      if (pickData.error) { alert(pickData.error); return; }
+
+      state.picklist = pickData.pozycje;
+      state.currentIdx = 0;
+      state.done = 0;
+      state.errors = 0;
+      state.startTime = Date.now();
+
+      document.getElementById('stat-total').textContent = state.picklist.length;
+      document.getElementById('stat-dist').textContent = pickData.szacowana_odleglosc_m;
+
+      showScreen('picking-screen');
+      renderCurrentItem();
+    } catch(e) {
+      alert('Błąd startu kompletacji: ' + e.message);
+    }
+  }
+
+  // ── Renderowanie bieżącej pozycji ─────────────────────────────────────
+  function renderCurrentItem() {
+    hideAlerts();
+    const item = state.picklist[state.currentIdx];
+
+    document.getElementById('pick-step-label').textContent =
+      `Pozycja ${state.currentIdx + 1} z ${state.picklist.length}`;
+    document.getElementById('pick-location').textContent = '📍 ' + item.lokalizacja;
+    document.getElementById('pick-product').textContent = item.towar_nazwa;
+    document.getElementById('pick-qty').textContent =
+      `Ilość: ${item.ilosc_wymagana} ${item.jm || ''}  |  Symbol: ${item.towar_symbol}`;
+
+    const pct = Math.round((state.done / state.picklist.length) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('stat-done').textContent = state.done;
+
+    document.getElementById('scan-input').value = '';
+    document.getElementById('scan-input').focus();
+
+    const isLast = state.currentIdx >= state.picklist.length - 1;
+    document.getElementById('complete-btn').style.display = isLast ? 'block' : 'none';
+  }
+
+  // ── Potwierdzenie skanu ───────────────────────────────────────────────
+  async function confirmScan() {
+    const code = document.getElementById('scan-input').value.trim();
+    if (!code) { showAlert('err', 'Wpisz lub zeskanuj kod towaru!'); return; }
+
+    const item = state.picklist[state.currentIdx];
+    try {
+      const res = await fetch(`${API}/api/wms/picking/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sesja_id: state.sesjaId,
+          pozycja_id: item.pozycja_id,
+          scan_code: code,
+          ilosc: item.ilosc_wymagana,
+          operator_login: state.operator
+        })
+      });
+      const result = await res.json();
+
+      if (result.ok) {
+        state.done++;
+        showAlert('ok', result.message);
+        setTimeout(() => {
+          if (state.currentIdx < state.picklist.length - 1) {
+            state.currentIdx++;
+            renderCurrentItem();
+          }
+        }, 800);
+      } else {
+        state.errors++;
+        showAlert('err', result.message);
+        // Wibracja telefonu przy błędzie
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
+    } catch(e) {
+      showAlert('err', 'Błąd połączenia z serwerem!');
+    }
+  }
+
+  // ── Pominięcie pozycji ────────────────────────────────────────────────
+  function skipItem() {
+    if (confirm('Pominąć tę pozycję? Zgłoś to kierownikowi!')) {
+      state.errors++;
+      if (state.currentIdx < state.picklist.length - 1) {
+        state.currentIdx++;
+        renderCurrentItem();
+      }
+    }
+  }
+
+  // ── Zakończenie kompletacji ───────────────────────────────────────────
+  async function completeOrder() {
+    if (!confirm('Zakończyć kompletację zamówienia ' + state.zamowienieNumer + '?')) return;
+
+    try {
+      await fetch(`${API}/api/wms/session/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sesja_id: state.sesjaId,
+          zamowienie_id: state.zamowienieId,
+          operator_login: state.operator
+        })
+      });
+
+      const czas = Math.round((Date.now() - state.startTime) / 1000);
+      document.getElementById('summary-text').textContent =
+        `Zamówienie: ${state.zamowienieNumer} | ` +
+        `Pozycji: ${state.done}/${state.picklist.length} | ` +
+        `Czas: ${formatTime(czas)}`;
+
+      if (state.errors > 0) {
+        document.getElementById('summary-errors').style.display = 'block';
+      }
+
+      showScreen('summary-screen');
+    } catch(e) {
+      alert('Błąd zamknięcia sesji: ' + e.message);
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────
+  function showAlert(type, msg) {
+    hideAlerts();
+    const el = document.getElementById(type === 'ok' ? 'alert-ok' : 'alert-err');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function hideAlerts() {
+    document.getElementById('alert-ok').classList.remove('visible');
+    document.getElementById('alert-err').classList.remove('visible');
+  }
+
+  function formatMoney(val) {
+    if (!val) return '—';
+    return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(val);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${m}m ${s}s`;
+  }
+
+  // Autofokus na input przy powrocie na ekran kompletacji
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && document.getElementById('picking-screen').classList.contains('active')) {
+      document.getElementById('scan-input').focus();
+    }
+  });
+</script>
+</body>
+</html>
