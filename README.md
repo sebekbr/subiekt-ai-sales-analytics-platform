@@ -2,7 +2,10 @@
 
 Kompletna integracja SubiektGT z AI (analizy BI) i WMS (kompletacja zamówień).  
 Serwer: Xeon E-2186G | 64 GB RAM | Ubuntu Server 22.04 | Koszt licencji: 0 zł
-
+Status: Prototyp – wymaga testów. Planowane usprawnienia:
+- testy manualne
+- weryfikacja kodu pod kątem poprawności składni
+- przechwytywanie błędów
 ---
 
 ## Struktura projektu
